@@ -1,0 +1,137 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Raw e-commerce transactional data loaded via dbt seed.
+      In production, these would be Snowflake tables populated by Fivetran / Airbyte / custom ELT.
+    schema: "{{ target.schema }}_seeds"
+    loader: dbt_seed
+
+    tables:
+      - name: raw_orders
+        description: >
+          One row per customer order. Contains order metadata: date, status, region, currency.
+          Sourced from the e-commerce platform's orders API.
+        loaded_at_field: order_date
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+        columns:
+          - name: order_id
+            description: "Unique order identifier (surrogate key from source system)"
+            tests:
+              - unique
+              - not_null
+          - name: customer_id
+            description: "Foreign key to raw_customers"
+            tests:
+              - not_null
+          - name: order_date
+            description: "Date the order was placed"
+            tests:
+              - not_null
+          - name: status
+            description: "Order lifecycle status"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['completed', 'pending', 'cancelled', 'refunded']
+          - name: region
+            description: "Spanish autonomous community where the order was placed"
+            tests:
+              - not_null
+          - name: currency
+            description: "Transaction currency (EUR for all orders in this dataset)"
+            tests:
+              - not_null
+
+      - name: raw_customers
+        description: >
+          One row per registered customer. Contains contact and demographic information.
+        columns:
+          - name: customer_id
+            description: "Unique customer identifier"
+            tests:
+              - unique
+              - not_null
+          - name: customer_name
+            description: "Full name of the customer"
+            tests:
+              - not_null
+          - name: email
+            description: "Customer email address"
+            tests:
+              - not_null
+              - unique
+          - name: country
+            description: "Customer's country code (ISO 3166-1 alpha-2)"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['ES', 'FR', 'DE', 'PT', 'IT']
+          - name: signup_date
+            description: "Date the customer created their account"
+            tests:
+              - not_null
+          - name: preferred_language
+            description: "Customer's preferred language for communications"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['es', 'en', 'fr']
+
+      - name: raw_products
+        description: >
+          One row per product in the catalog. Prices stored in cents to avoid floating-point issues.
+        columns:
+          - name: product_id
+            description: "Unique product identifier"
+            tests:
+              - unique
+              - not_null
+          - name: product_name
+            description: "Product display name"
+            tests:
+              - not_null
+          - name: category
+            description: "Top-level product category"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['Electronics', 'Clothing', 'Home', 'Sports', 'Books']
+          - name: subcategory
+            description: "Product subcategory within the parent category"
+            tests:
+              - not_null
+          - name: unit_price_cents
+            description: "Product price in cents (EUR)"
+            tests:
+              - not_null
+
+      - name: raw_order_items
+        description: >
+          One row per line item within an order. An order can have multiple items.
+          Each line references an order and a product.
+        columns:
+          - name: order_item_id
+            description: "Unique line item identifier"
+            tests:
+              - unique
+              - not_null
+          - name: order_id
+            description: "Foreign key to raw_orders"
+            tests:
+              - not_null
+          - name: product_id
+            description: "Foreign key to raw_products"
+            tests:
+              - not_null
+          - name: quantity
+            description: "Number of units ordered for this line item"
+            tests:
+              - not_null
+          - name: unit_price_cents
+            description: "Unit price at time of purchase in cents (may differ from current catalog price)"
+            tests:
+              - not_null
