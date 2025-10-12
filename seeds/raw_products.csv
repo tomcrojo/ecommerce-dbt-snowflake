@@ -1,0 +1,26 @@
+product_id,product_name,category,subcategory,unit_price_cents
+1,Auriculares Bluetooth Pro,Electronics,Audio,4990
+2,Smartwatch Deportivo X3,Electronics,Wearables,12900
+3,Cargador USB-C 65W,Electronics,Accesorios,2990
+4,"Tablet Android 10.1""",Electronics,Tablets,24900
+5,Ratón Ergonómico Inalámbrico,Electronics,Periféricos,3490
+6,Webcam Full HD 1080p,Electronics,Periféricos,5990
+7,Camiseta Algodón Orgánico,Clothing,Camisetas,2490
+8,Chaqueta Impermeable Trail,Clothing,Chaquetas,8990
+9,Pantalón Chino Slim Fit,Clothing,Pantalones,3990
+10,Sudadera con Capucha,Clothing,Sudaderas,3490
+11,Calcetines Merino Pack x3,Clothing,Accesorios,1290
+12,Lámpara LED Escritorio,Home,Iluminación,3490
+13,Set Cubiertos Acero 24pzas,Home,Cocina,2990
+14,Manta Polar 200x150cm,Home,Textil,1990
+15,Organizador Cajón Cocina,Home,Organización,1490
+16,Reloj Despertador Digital,Home,Decoración,2290
+17,Esterilla Yoga 6mm,Sports,Fitness,1990
+18,Botella Acero 750ml,Sports,Hidratación,1590
+19,Bandas Elásticas Set x5,Sports,Fitness,1290
+20,Mochila Senderismo 30L,Sports,Outdoor,4990
+21,Zapatillas Running Pro,Sports,Calzado,8990
+22,El Arte de No Amargarse la Vida,Books,Desarrollo Personal,1290
+23,Sapiens: De Animales a Dioses,Books,Historia,1490
+24,Clean Code (Ed. Español),Books,Tecnología,3290
+25,Cocina Mediterránea Fácil,Books,Cocina,1890
