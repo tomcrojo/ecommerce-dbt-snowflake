@@ -1,0 +1,96 @@
+name: ecommerce_analytics
+version: "1.0.0"
+config-version: 2
+
+profile: ecommerce_snowflake
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - target
+  - dbt_packages
+  - logs
+
+vars:
+  # Cutoff date for incremental models — only process orders after this date.
+  # Overridable via dbt run --vars '{"start_date": "2025-01-01"}'
+  start_date: "2024-01-01"
+
+seeds:
+  ecommerce_analytics:
+    raw_orders:
+      +column_types:
+        order_id: integer
+        customer_id: integer
+        order_date: date
+        status: varchar
+        region: varchar
+        currency: varchar
+    raw_customers:
+      +column_types:
+        customer_id: integer
+        customer_name: varchar
+        email: varchar
+        country: varchar
+        signup_date: date
+        preferred_language: varchar
+    raw_products:
+      +column_types:
+        product_id: integer
+        product_name: varchar
+        category: varchar
+        subcategory: varchar
+        unit_price_cents: integer
+    raw_order_items:
+      +column_types:
+        order_item_id: integer
+        order_id: integer
+        product_id: integer
+        quantity: integer
+        unit_price_cents: integer
+
+models:
+  ecommerce_analytics:
+
+    staging:
+      +materialized: view
+      +schema: staging
+      +tags: ["staging"]
+
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+      +tags: ["intermediate"]
+
+    marts:
+      +materialized: table
+      +schema: marts
+      +tags: ["marts"]
+
+      fct_orders:
+        +materialized: incremental
+        +incremental_strategy: merge
+        +unique_key: order_id
+
+  # Report marts keep their default materialization (table)
+  # but live in a separate schema for BI access control
+  ecommerce_analytics.marts.rpt_daily_revenue:
+    +schema: reporting
+    +tags: ["marts", "reporting"]
+
+tests:
+  ecommerce_analytics:
+    +severity: error
+
+    marts:
+      +schema: tests
+
+snapshots:
+  ecommerce_analytics:
+    +schema: snapshots
+    +tags: ["snapshots"]

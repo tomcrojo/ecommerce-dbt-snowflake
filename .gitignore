@@ -1,0 +1,49 @@
+# dbt
+target/
+dbt_packages/
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# dbt profiles — use profiles.yml in repo, not local overrides
+# Do NOT commit real credentials
+profiles.yml.local
+
+# Generated docs
+target/
+
+# Batch ingestion data
+data/raw_batches/
+data/processed/
+
+# Docker local volumes
+pg_data/
+profiles_local/profiles.yml.local
