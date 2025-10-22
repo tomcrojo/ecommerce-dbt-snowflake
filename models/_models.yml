@@ -1,0 +1,66 @@
+version: 2
+
+models:
+  - name: int_order_items_enriched
+    description: >
+      Intermediate model joining order items with products and orders.
+      This enrichment eliminates downstream multi-join complexity and
+      provides a denormalized line-item view for mart consumption.
+    config:
+      materialized: table
+    meta:
+      owner: data-engineering
+      contains_pii: false
+    columns:
+      - name: order_item_id
+        description: "Unique line item identifier"
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Parent order identifier"
+        tests:
+          - not_null
+      - name: customer_id
+        description: "Customer who placed the order"
+        tests:
+          - not_null
+      - name: product_id
+        description: "Product in this line item"
+        tests:
+          - not_null
+      - name: line_total
+        description: "Line total in EUR (quantity × unit_price)"
+        tests:
+          - not_null
+
+  - name: int_customer_orders
+    description: >
+      Intermediate model aggregating order-level metrics per customer.
+      Provides first/last order dates, total revenue, order counts, and
+      recency metrics used by dim_customers for segmentation.
+    config:
+      materialized: table
+    meta:
+      owner: data-engineering
+      contains_pii: false
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: total_orders
+        description: "Total order count"
+        tests:
+          - not_null
+      - name: total_revenue
+        description: "Total revenue in EUR"
+        tests:
+          - not_null
+      - name: first_order_date
+        description: "Date of first order"
+      - name: last_order_date
+        description: "Date of most recent order"
+      - name: days_since_last_order
+        description: "Recency in days"
