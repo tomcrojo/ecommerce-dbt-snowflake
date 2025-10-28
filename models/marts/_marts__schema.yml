@@ -1,0 +1,359 @@
+version: 2
+
+models:
+
+  # ────────────────────────────────────────────────────────────
+  # FACT TABLES
+  # ────────────────────────────────────────────────────────────
+
+  - name: fct_orders
+    description: >
+      Fact table at order grain. One row per order.
+      Incremental on order_date for efficient processing of growing order volume.
+      Contains order-level financial metrics derived from line items.
+    config:
+      materialized: incremental
+      unique_key: order_id
+    columns:
+      - name: order_id
+        description: "Unique order identifier (grain key)"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Foreign key to dim_customers"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: order_date
+        description: "Date the order was placed"
+        tests:
+          - not_null
+          - no_future_dates
+      - name: order_year
+        description: "Year extracted from order_date"
+        tests:
+          - not_null
+      - name: order_month
+        description: "Month extracted from order_date (1-12)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      - name: region
+        description: "Spanish autonomous community where the order was placed"
+        tests:
+          - not_null
+      - name: status
+        description: "Order lifecycle status"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['completed', 'pending', 'cancelled', 'refunded']
+      - name: currency
+        description: "Transaction currency"
+        tests:
+          - not_null
+      - name: total_amount
+        description: "Order total in EUR, computed from line items"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_value_lengths_to_be_between:
+              min_value: 0
+      - name: item_count
+        description: "Total quantity of items across all line items in this order"
+        tests:
+          - not_null
+      - name: line_item_count
+        description: "Number of distinct line items in this order"
+        tests:
+          - not_null
+      - name: is_completed
+        description: "Whether the order has been completed (status = 'completed')"
+        tests:
+          - not_null
+      - name: _loaded_at
+        description: "Timestamp when the row was loaded/refreshed"
+
+  - name: fct_order_items
+    description: >
+      Fact table at order-item grain. One row per product within an order.
+      This is the lowest grain of the transactional data and supports
+      product-level and category-level revenue analysis.
+    columns:
+      - name: order_item_id
+        description: "Unique line item identifier (grain key)"
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Foreign key to fct_orders"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_orders')
+              field: order_id
+      - name: customer_id
+        description: "Foreign key to dim_customers"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: product_id
+        description: "Foreign key to dim_products"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
+      - name: product_name
+        description: "Product display name (denormalized from dim_products for query convenience)"
+        tests:
+          - not_null
+      - name: product_category
+        description: "Top-level product category"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Electronics', 'Clothing', 'Home', 'Sports', 'Books']
+      - name: product_subcategory
+        description: "Product subcategory"
+        tests:
+          - not_null
+      - name: product_price_tier
+        description: "Price tier classification (budget / standard / premium)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['budget', 'standard', 'premium']
+      - name: quantity
+        description: "Number of units ordered for this line item"
+        tests:
+          - not_null
+      - name: unit_price_cents
+        description: "Unit price in cents at time of purchase"
+        tests:
+          - not_null
+      - name: unit_price
+        description: "Unit price in EUR"
+        tests:
+          - not_null
+      - name: line_total
+        description: "Line total in EUR (quantity × unit_price)"
+        tests:
+          - not_null
+      - name: order_date
+        description: "Date the parent order was placed"
+        tests:
+          - not_null
+      - name: order_year
+        description: "Year of the order"
+        tests:
+          - not_null
+      - name: order_month
+        description: "Month of the order (1-12)"
+        tests:
+          - not_null
+      - name: order_status
+        description: "Status of the parent order"
+        tests:
+          - not_null
+      - name: region
+        description: "Region where the order was placed"
+        tests:
+          - not_null
+      - name: currency
+        description: "Transaction currency"
+      - name: is_revenue_recognized
+        description: "Whether this line item counts as recognized revenue (parent order is completed)"
+        tests:
+          - not_null
+      - name: _loaded_at
+        description: "Timestamp when the row was loaded/refreshed"
+
+  # ────────────────────────────────────────────────────────────
+  # DIMENSION TABLES
+  # ────────────────────────────────────────────────────────────
+
+  - name: dim_customers
+    description: >
+      Customer dimension table. Contains customer demographics plus
+      pre-computed behavioral segments and lifetime value classifications.
+      Derived from staging customers joined with order history aggregation.
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier (surrogate key)"
+        tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: "Full name of the customer"
+        tests:
+          - not_null
+      - name: email
+        description: "Customer email (lowercase, trimmed)"
+        tests:
+          - unique
+          - not_null
+      - name: country
+        description: "Country code (ISO 3166-1 alpha-2)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['ES', 'FR', 'DE', 'PT', 'IT']
+      - name: signup_date
+        description: "Date the customer registered"
+        tests:
+          - not_null
+      - name: preferred_language
+        description: "Preferred language for communications"
+        tests:
+          - not_null
+      - name: account_age_days
+        description: "Days since signup to current date"
+        tests:
+          - not_null
+      - name: total_orders
+        description: "Total number of orders placed by this customer"
+        tests:
+          - not_null
+      - name: total_revenue
+        description: "Total revenue in EUR from all orders"
+        tests:
+          - not_null
+      - name: avg_order_value
+        description: "Average revenue per order in EUR"
+      - name: first_order_date
+        description: "Date of the customer's first order (null if no orders)"
+      - name: last_order_date
+        description: "Date of the customer's most recent order (null if no orders)"
+      - name: days_since_last_order
+        description: "Days since the customer's most recent order (9999 if no orders)"
+      - name: completed_orders
+        description: "Count of orders with 'completed' status"
+      - name: failed_orders
+        description: "Count of orders with 'cancelled' or 'refunded' status"
+      - name: customer_segment
+        description: "Behavioral segment: new / active / returning / churned"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['new', 'active', 'returning', 'churned']
+      - name: lifetime_value_tier
+        description: "Revenue-based tier: no_orders / bronze (<100€) / silver (<500€) / gold (<2000€) / platinum (2000€+)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['no_orders', 'bronze', 'silver', 'gold', 'platinum']
+      - name: _loaded_at
+        description: "Timestamp when the row was loaded/refreshed"
+
+  - name: dim_products
+    description: >
+      Product dimension table. Contains product catalog information
+      plus order activity metrics to identify active vs inactive products.
+    columns:
+      - name: product_id
+        description: "Unique product identifier (surrogate key)"
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: "Product display name"
+        tests:
+          - not_null
+      - name: category
+        description: "Top-level product category"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Electronics', 'Clothing', 'Home', 'Sports', 'Books']
+      - name: subcategory
+        description: "Product subcategory"
+        tests:
+          - not_null
+      - name: price_tier
+        description: "Price tier: budget (<15€) / standard (<150€) / premium (>=150€)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['budget', 'standard', 'premium']
+      - name: unit_price_cents
+        description: "Current catalog price in cents"
+        tests:
+          - not_null
+      - name: unit_price
+        description: "Current catalog price in EUR"
+        tests:
+          - not_null
+      - name: times_ordered
+        description: "Number of times this product has appeared in an order"
+        tests:
+          - not_null
+      - name: total_units_sold
+        description: "Total quantity of this product sold across all orders"
+        tests:
+          - not_null
+      - name: last_order_date
+        description: "Date this product was most recently ordered (null if never ordered)"
+      - name: is_active
+        description: "Whether the product has been ordered at least once"
+        tests:
+          - not_null
+      - name: _loaded_at
+        description: "Timestamp when the row was loaded/refreshed"
+
+  # ────────────────────────────────────────────────────────────
+  # REPORTING
+  # ────────────────────────────────────────────────────────────
+
+  - name: rpt_daily_revenue
+    description: >
+      Reporting table aggregating revenue by date, region, and product category.
+      Provides daily KPIs for executive dashboards and regional performance tracking.
+    columns:
+      - name: report_date
+        description: "Date of the aggregated metrics"
+        tests:
+          - not_null
+      - name: region
+        description: "Spanish autonomous community"
+        tests:
+          - not_null
+      - name: product_category
+        description: "Product category"
+        tests:
+          - not_null
+      - name: order_year
+        description: "Year of the report_date"
+        tests:
+          - not_null
+      - name: order_month
+        description: "Month of the report_date"
+        tests:
+          - not_null
+      - name: total_orders
+        description: "Number of distinct orders on this date/region/category"
+        tests:
+          - not_null
+      - name: total_items_sold
+        description: "Total item quantity sold"
+        tests:
+          - not_null
+      - name: total_revenue
+        description: "Total revenue in EUR (recognized orders only)"
+        tests:
+          - not_null
+      - name: avg_order_value
+        description: "Average order value in EUR"
+        tests:
+          - not_null
+      - name: unique_customers
+        description: "Number of distinct customers who ordered"
+        tests:
+          - not_null
+      - name: _loaded_at
+        description: "Timestamp when the row was loaded/refreshed"
