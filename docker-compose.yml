@@ -1,0 +1,72 @@
+services:
+  # PostgreSQL — replaces Snowflake for local development
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dbt_user
+      POSTGRES_PASSWORD: dbt_pass
+      POSTGRES_DB: ecommerce
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./seeds:/docker-entrypoint-initdb.d/seeds:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dbt_user -d ecommerce"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # dbt runner
+  dbt:
+    build:
+      context: .
+      dockerfile: Dockerfile.dbt
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DBT_HOST: postgres
+      DBT_PORT: 5432
+      DBT_USER: dbt_user
+      DBT_PASSWORD: dbt_pass
+      DBT_DB: ecommerce
+      DBT_SCHEMA: public
+    volumes:
+      - .:/usr/src/app
+    profiles:
+      - dbt
+
+  # Batch ingestor
+  ingestor:
+    build:
+      context: .
+      dockerfile: Dockerfile.ingestor
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DUMMYJSON_BASE_URL: https://dummyjson.com
+      BATCH_INTERVAL: 300
+    volumes:
+      - ./data:/usr/src/app/data
+    profiles:
+      - ingest
+
+  # Streamlit dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    depends_on:
+      - postgres
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/usr/src/app/data
+      - ./dashboard:/usr/src/app/dashboard
+    profiles:
+      - dashboard
+
+volumes:
+  pg_data:

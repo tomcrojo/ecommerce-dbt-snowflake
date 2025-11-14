@@ -1,0 +1,22 @@
+FROM python:3.11-slim
+
+WORKDIR /usr/src/app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir dbt-postgres>=1.7,<2.0
+
+COPY . .
+
+# NOTE: dbt models may need minor PostgreSQL compatibility adjustments
+# (e.g., REPLACE → INSERT ... ON CONFLICT, CURRENT_TIMESTAMP nuances).
+# Review models after first `dbt run` for any Snowflake-specific SQL.
+
+# Use local PostgreSQL profile instead of Snowflake
+ENV DBT_PROFILES_DIR=/usr/src/app/profiles_local
+
+ENTRYPOINT ["dbt"]
+CMD ["run"]

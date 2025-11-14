@@ -1,0 +1,12 @@
+ecommerce_snowflake:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('DBT_HOST', 'localhost') }}"
+      port: "{{ env_var('DBT_PORT', '5432') | int }}"
+      user: "{{ env_var('DBT_USER', 'dbt_user') }}"
+      pass: "{{ env_var('DBT_PASSWORD', 'dbt_pass') }}"
+      dbname: "{{ env_var('DBT_DB', 'ecommerce') }}"
+      schema: "{{ env_var('DBT_SCHEMA', 'public') }}"
+      threads: 4
