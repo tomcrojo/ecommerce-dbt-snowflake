@@ -23,6 +23,7 @@ vars:
 
 seeds:
   ecommerce_analytics:
+    +schema: seeds
     raw_orders:
       +column_types:
         order_id: integer

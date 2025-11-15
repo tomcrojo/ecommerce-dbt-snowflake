@@ -42,7 +42,7 @@ customer_orders as (
         max(o.order_date) as last_order_date,
 
         -- Recency
-        datediff('day', max(o.order_date), current_date()) as days_since_last_order,
+        {{ dbt.datediff("max(o.order_date)", "current_date()", "day") }} as days_since_last_order,
 
         -- Completed order count
         count(distinct case when o.status = 'completed' then o.order_id end) as completed_orders,

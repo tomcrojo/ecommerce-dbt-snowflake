@@ -26,7 +26,7 @@ renamed as (
         lower(trim(preferred_language)) as preferred_language,
 
         -- Derived: days since signup, useful for customer segmentation
-        datediff('day', signup_date, current_date()) as account_age_days
+        {{ dbt.datediff("signup_date", "current_date()", "day") }} as account_age_days
 
     from source
 
