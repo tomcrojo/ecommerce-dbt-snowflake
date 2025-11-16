@@ -60,7 +60,7 @@ models:
         description: "Order total in EUR, computed from line items"
         tests:
           - not_null
-          - dbt_expectations.expect_column_value_lengths_to_be_between:
+          - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
       - name: item_count
         description: "Total quantity of items across all line items in this order"
