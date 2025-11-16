@@ -20,8 +20,8 @@ renamed as (
         lower(trim(status)) as status,
         trim(region) as region,
         upper(trim(currency)) as currency,
-        year(order_date) as order_year,
-        month(order_date) as order_month
+        extract(year from order_date) as order_year,
+        extract(month from order_date) as order_month
 
     from source
 
