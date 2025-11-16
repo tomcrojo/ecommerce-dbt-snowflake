@@ -56,7 +56,7 @@ final as (
             else 'platinum'
         end as lifetime_value_tier,
 
-        current_timestamp() as _loaded_at
+        current_timestamp as _loaded_at
 
     from customers c
 

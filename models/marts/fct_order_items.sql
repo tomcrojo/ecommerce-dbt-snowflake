@@ -36,7 +36,7 @@ final as (
         -- Flag for completed order items (revenue-recognized)
         case when order_status = 'completed' then true else false end as is_revenue_recognized,
 
-        current_timestamp() as _loaded_at
+        current_timestamp as _loaded_at
 
     from enriched
 

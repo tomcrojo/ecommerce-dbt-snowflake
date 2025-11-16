@@ -37,7 +37,7 @@ daily_revenue as (
         -- Customer reach
         count(distinct customer_id) as unique_customers,
 
-        current_timestamp() as _loaded_at
+        current_timestamp as _loaded_at
 
     from order_items
 

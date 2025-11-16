@@ -58,7 +58,7 @@ final as (
         case when o.status = 'completed' then true else false end as is_completed,
 
         -- Audit
-        current_timestamp() as _loaded_at
+        current_timestamp as _loaded_at
 
     from orders o
 

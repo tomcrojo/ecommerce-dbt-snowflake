@@ -43,7 +43,7 @@ final as (
         -- Active flag: ordered at least once
         case when po.product_id is not null then true else false end as is_active,
 
-        current_timestamp() as _loaded_at
+        current_timestamp as _loaded_at
 
     from products p
 
