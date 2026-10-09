@@ -2,6 +2,8 @@
 
 ELT pipeline that transforms raw Spanish e-commerce transactional data into a clean dimensional model (star schema) using dbt Core on Snowflake. Implements a staging → intermediate → marts layer structure with data quality tests, SCD2 snapshots, and CI/CD via GitHub Actions. Includes batch ingestion from a live API and a Streamlit analytics dashboard. Built as a portfolio project demonstrating dimensional modeling, data engineering best practices, and Snowflake proficiency for Madrid-based roles.
 
+> Portfolio demo on synthetic data: 100K orders / 10K customers / 200 products / ~250K line items are generated test volumes, not production volume.
+
 ## Architecture
 
 ```
@@ -69,7 +71,7 @@ python scripts/batch_ingestor.py --dry-run
 # Generate 3 batches with default 5-minute interval
 python scripts/batch_ingestor.py --count 3
 
-# Run forever (production mode)
+# Run forever (continuous mode in this demo configuration)
 python scripts/batch_ingestor.py
 
 # Custom interval: 1 batch every 60 seconds
